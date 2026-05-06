@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CBT Exam Browser</string>
+    <string name="start_exam">Mulai Ujian</string>
+    <string name="scan_qr">Scan QR Code</string>
+    <string name="settings">Pengaturan</string>
+    <string name="exit">Keluar</string>
+    <string name="cancel">Batal</string>
+    <string name="save">Simpan</string>
+    <string name="url_hint">Masukkan URL Test Center</string>
+    <string name="confirm_start">Anda akan memulai ujian. Lanjutkan?</string>
+    <string name="confirm_exit">Apakah Anda yakin ingin keluar dari ujian?</string>
+    <string name="back_disabled">Tombol kembali dinonaktifkan selama ujian</string>
+</resources>

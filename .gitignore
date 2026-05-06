@@ -1,0 +1,28 @@
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+*.iml
+
+# iOS
+ios/*.xcworkspace
+ios/*.xcodeproj/xcuserdata/
+ios/build/
+ios/Pods/
+ios/DerivedData/
+
+# General
+*.apk
+*.ipa
+*.dSYM.zip
+*.dSYM
+.DS_Store
+Thumbs.db
+
+# Secrets
+*.keystore
+*.jks
+.env
+*.env.*
