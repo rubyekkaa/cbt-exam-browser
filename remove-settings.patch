@@ -1,0 +1,40 @@
+diff --git a/android/app/src/main/java/com/smkn19jkt/cbtbrowser/MainActivity.kt b/android/app/src/main/java/com/smkn19jkt/cbtbrowser/MainActivity.kt
+index 3ac5a8d..cba1e70 100644
+--- a/android/app/src/main/java/com/smkn19jkt/cbtbrowser/MainActivity.kt
++++ b/android/app/src/main/java/com/smkn19jkt/cbtbrowser/MainActivity.kt
+@@ -78,11 +78,6 @@ class MainActivity : AppCompatActivity() {
+             binding.tvUserAgentStatus.text = if (isChecked) "User Agent: cbt-exam-browser" else "User Agent: Default"
+         }
+ 
+-        // Settings button
+-        binding.btnSettings.setOnClickListener {
+-            startActivity(Intent(this, SettingsActivity::class.java))
+-        }
+-
+         // Recent URLs
+         binding.btnRecentUrls.setOnClickListener {
+             showRecentUrls()
+diff --git a/android/app/src/main/res/layout/activity_main.xml b/android/app/src/main/res/layout/activity_main.xml
+index 5387ee3..6846738 100644
+--- a/android/app/src/main/res/layout/activity_main.xml
++++ b/android/app/src/main/res/layout/activity_main.xml
+@@ -147,19 +147,6 @@
+             app:cornerRadius="12dp"
+             android:backgroundTint="@color/primary" />
+ 
+-        <!-- Settings Button -->
+-        <com.google.android.material.button.MaterialButton
+-            android:id="@+id/btnSettings"
+-            android:layout_width="match_parent"
+-            android:layout_height="wrap_content"
+-            android:layout_marginTop="8dp"
+-            android:text="Pengaturan"
+-            android:textSize="14sp"
+-            app:icon="@drawable/ic_settings"
+-            app:iconGravity="textStart"
+-            style="@style/Widget.MaterialComponents.Button.TextButton"
+-            android:textColor="@color/text_secondary" />
+-
+         <!-- Version -->
+         <TextView
+             android:id="@+id/tvVersion"

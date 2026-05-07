@@ -147,19 +147,6 @@
             app:cornerRadius="12dp"
             android:backgroundTint="@color/primary" />
 
-        <!-- Settings Button -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnSettings"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Pengaturan"
-            android:textSize="14sp"
-            app:icon="@drawable/ic_settings"
-            app:iconGravity="textStart"
-            style="@style/Widget.MaterialComponents.Button.TextButton"
-            android:textColor="@color/text_secondary" />
-
         <!-- Version -->
         <TextView
             android:id="@+id/tvVersion"

@@ -78,11 +78,6 @@ class MainActivity : AppCompatActivity() {
             binding.tvUserAgentStatus.text = if (isChecked) "User Agent: cbt-exam-browser" else "User Agent: Default"
         }
 
-        // Settings button
-        binding.btnSettings.setOnClickListener {
-            startActivity(Intent(this, SettingsActivity::class.java))
-        }
-
         // Recent URLs
         binding.btnRecentUrls.setOnClickListener {
             showRecentUrls()
