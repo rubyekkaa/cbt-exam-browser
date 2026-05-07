@@ -128,9 +128,10 @@ class ExamActivity : AppCompatActivity() {
             }
 
             // Enable cookies
+            val webViewRef = this
             CookieManager.getInstance().apply {
                 setAcceptCookie(true)
-                setAcceptThirdPartyCookies(this@apply, true)
+                setAcceptThirdPartyCookies(webViewRef, true)
             }
 
             webViewClient = object : WebViewClient() {
