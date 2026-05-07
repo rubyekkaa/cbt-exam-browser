@@ -22,11 +22,10 @@
 
     <!-- Check mark on screen -->
     <path
-        android:fillColor="#1565C0"
+        android:fillColor="@android:color/transparent"
         android:strokeWidth="3"
         android:strokeColor="#1565C0"
-        android:pathData="M40,48l6,6l14,-14"
-        android:fillColor="@android:color/transparent" />
+        android:pathData="M40,48l6,6l14,-14" />
 
     <!-- Monitor stand -->
     <path
