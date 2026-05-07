@@ -1,0 +1,122 @@
+diff --git a/.github/workflows/build-android.yml b/.github/workflows/build-android.yml
+index 84da38d..ba90ff2 100644
+--- a/.github/workflows/build-android.yml
++++ b/.github/workflows/build-android.yml
+@@ -42,6 +42,10 @@ jobs:
+         run: ./gradlew assembleRelease
+         working-directory: android
+ 
++      - name: Build Release AAB (for Play Store)
++        run: ./gradlew bundleRelease
++        working-directory: android
++
+       - name: Upload Debug APK
+         uses: actions/upload-artifact@v4
+         with:
+@@ -54,6 +58,12 @@ jobs:
+           name: cbt-exam-browser-release
+           path: android/app/build/outputs/apk/release/*.apk
+ 
++      - name: Upload Release AAB (Play Store)
++        uses: actions/upload-artifact@v4
++        with:
++          name: cbt-exam-browser-release-aab
++          path: android/app/build/outputs/bundle/release/*.aab
++
+       - name: Create Release
+         if: startsWith(github.ref, 'refs/tags/v')
+         uses: softprops/action-gh-release@v1
+@@ -61,5 +71,6 @@ jobs:
+           files: |
+             android/app/build/outputs/apk/debug/*.apk
+             android/app/build/outputs/apk/release/*.apk
++            android/app/build/outputs/bundle/release/*.aab
+         env:
+           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+diff --git a/android/app/build.gradle.kts b/android/app/build.gradle.kts
+index 14143c6..b60379a 100644
+--- a/android/app/build.gradle.kts
++++ b/android/app/build.gradle.kts
+@@ -15,10 +15,20 @@ android {
+         versionName = "1.0.0"
+     }
+ 
++    signingConfigs {
++        create("release") {
++            storeFile = file("release-keystore.jks")
++            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "cbtexam2024"
++            keyAlias = "cbt-exam-browser"
++            keyPassword = System.getenv("KEY_PASSWORD") ?: "cbtexam2024"
++        }
++    }
++
+     buildTypes {
+         release {
+             isMinifyEnabled = true
+             isShrinkResources = true
++            signingConfig = signingConfigs.getByName("release")
+             proguardFiles(
+                 getDefaultProguardFile("proguard-android-optimize.txt"),
+                 "proguard-rules.pro"
+diff --git a/android/app/release-keystore.jks b/android/app/release-keystore.jks
+new file mode 100644
+index 0000000000000000000000000000000000000000..2eae760dc0f2e94b831cd57e441cee0269820844
+GIT binary patch
+literal 2796
+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
+VJ)_oQxlc(A(@ztk&HT%v{t2vW4{-nh
+
+literal 0
+HcmV?d00001
+
