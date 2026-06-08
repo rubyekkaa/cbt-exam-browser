@@ -13,7 +13,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.text.InputType
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
@@ -23,7 +22,6 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -36,7 +34,6 @@ class ExamActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_URL = "extra_url"
-        const val EXTRA_EXIT_PIN = "extra_exit_pin"
         private const val ZOOM_STEP = 10
         private const val MIN_ZOOM = 50
         private const val MAX_ZOOM = 200
@@ -45,10 +42,9 @@ class ExamActivity : AppCompatActivity() {
     private lateinit var binding: ActivityExamBinding
     private lateinit var penaltyManager: PenaltyManager
     private var currentZoom = 100
-    private var exitPin = ""
     private val handler = Handler(Looper.getMainLooper())
 
-    /** True selama sesi ujian terkunci. Menjadi false hanya saat keluar SAH (via PIN). */
+    /** True selama sesi ujian terkunci. Menjadi false hanya saat keluar yang sah. */
     private var isLocked = true
 
     /** True jika siswa keluar dengan sah (PIN benar) sehingga tidak kena penalti. */
@@ -56,6 +52,9 @@ class ExamActivity : AppCompatActivity() {
 
     /** Penanda apakah halaman soal sudah termuat (penalti hanya berlaku setelah ini). */
     private var enteredExam = false
+
+    /** True jika ujian sudah selesai (mencapai halaman review/submit final). */
+    private var examFinished = false
 
     private var forcedExitRingtone: Ringtone? = null
 
@@ -92,7 +91,6 @@ class ExamActivity : AppCompatActivity() {
             finish()
             return
         }
-        exitPin = intent.getStringExtra(EXTRA_EXIT_PIN) ?: ""
 
         // Cegah sentuhan ketika layar tertutup overlay aplikasi lain (anti app virtual/floating).
         binding.root.filterTouchesWhenObscured = true
@@ -189,6 +187,10 @@ class ExamActivity : AppCompatActivity() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                     super.onPageStarted(view, url, favicon)
                     binding.progressBar.visibility = View.VISIBLE
+                    // Deteksi sedini mungkin: jika sudah masuk halaman review = ujian selesai.
+                    if (ExamConfig.isExamFinishedUrl(url)) {
+                        onExamFinished()
+                    }
                 }
 
                 override fun onPageFinished(view: WebView?, url: String?) {
@@ -198,6 +200,10 @@ class ExamActivity : AppCompatActivity() {
                     if (!enteredExam) {
                         enteredExam = true
                         penaltyManager.markEnteredExam()
+                    }
+                    // Konfirmasi ulang status selesai saat halaman tuntas dimuat.
+                    if (ExamConfig.isExamFinishedUrl(url)) {
+                        onExamFinished()
                     }
                 }
 
@@ -290,15 +296,15 @@ class ExamActivity : AppCompatActivity() {
     }
 
     /**
-     * Tombol Exit. Keluar HANYA bisa lewat PIN guru/pengawas.
-     * Keluar via PIN benar = SAH, tidak kena penalti.
+     * Tombol Exit.
+     * - Jika ujian SUDAH selesai (mencapai halaman review) -> keluar bebas, tanpa penalti.
+     * - Jika BELUM selesai -> dianggap keluar paksa: peringatan, lalu alarm + penalti.
      */
     private fun showExitDialog() {
-        if (exitPin.isEmpty()) {
-            // Tidak ada PIN diset: keluar tetap butuh konfirmasi, dianggap sah (oleh pengawas).
+        if (examFinished) {
             AlertDialog.Builder(this)
                 .setTitle("Keluar Ujian")
-                .setMessage("Keluar dari ujian harus seizin pengawas.\n\nLanjut keluar?")
+                .setMessage("Ujian sudah selesai. Anda dapat keluar dari aplikasi.")
                 .setPositiveButton("Keluar") { _, _ -> exitLegitimately() }
                 .setNegativeButton("Batal", null)
                 .setCancelable(false)
@@ -306,24 +312,32 @@ class ExamActivity : AppCompatActivity() {
             return
         }
 
-        val editText = EditText(this).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
-            hint = "Masukkan PIN pengawas"
-        }
         AlertDialog.Builder(this)
-            .setTitle("Keluar Ujian")
-            .setMessage("Masukkan PIN pengawas untuk keluar tanpa pelanggaran:")
-            .setView(editText)
-            .setPositiveButton("Keluar") { _, _ ->
-                if (editText.text.toString() == exitPin) {
-                    exitLegitimately()
-                } else {
-                    Toast.makeText(this, "PIN salah! Keluar paksa akan dikenai penalti.", Toast.LENGTH_LONG).show()
-                }
-            }
-            .setNegativeButton("Batal", null)
+            .setTitle("Peringatan Pelanggaran")
+            .setMessage(
+                "Ujian BELUM selesai.\n\n" +
+                "Jika Anda tetap keluar sekarang, ini dianggap PELANGGARAN dan Anda akan " +
+                "dikenai penalti (kartu kuning/merah) beserta alarm.\n\n" +
+                "Tetap keluar?"
+            )
+            .setPositiveButton("Tetap Keluar") { _, _ -> exitAsForced() }
+            .setNegativeButton("Lanjut Ujian", null)
             .setCancelable(false)
             .show()
+    }
+
+    /** Keluar paksa lewat tombol Exit sebelum ujian selesai: catat pelanggaran + alarm. */
+    private fun exitAsForced() {
+        val card = penaltyManager.registerForcedExit()
+        if (card != PenaltyManager.CardType.NONE) {
+            playForcedExitAlarm()
+        }
+        isLocked = false
+        stopLockTaskSafely()
+        if (penaltyManager.isPenaltyActive()) {
+            startActivity(Intent(this, PenaltyActivity::class.java))
+        }
+        finish()
     }
 
     /** Keluar sah via PIN: bersihkan sesi, tidak ada penalti. */
@@ -333,6 +347,20 @@ class ExamActivity : AppCompatActivity() {
         penaltyManager.clearExamSession()
         stopLockTaskSafely()
         finish()
+    }
+
+    /**
+     * Dipanggil saat WebView mencapai halaman review (ujian selesai/submit final).
+     * Lepas kunci kiosk: siswa boleh keluar tanpa penalti. Bersihkan sesi agar
+     * keluar paksa setelah ini tidak lagi dihitung pelanggaran.
+     */
+    private fun onExamFinished() {
+        if (examFinished) return
+        examFinished = true
+        legitimateExit = true
+        penaltyManager.clearExamSession()
+        stopLockTaskSafely()
+        Toast.makeText(this, "Ujian selesai. Anda boleh keluar lewat tombol keluar.", Toast.LENGTH_LONG).show()
     }
 
     private fun stopLockTaskSafely() {

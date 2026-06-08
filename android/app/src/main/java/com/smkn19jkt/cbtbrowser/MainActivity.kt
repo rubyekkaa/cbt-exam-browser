@@ -1,8 +1,6 @@
 package com.smkn19jkt.cbtbrowser
 
-import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.Gravity
 import android.view.ViewGroup
@@ -15,7 +13,6 @@ import java.util.concurrent.TimeUnit
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var prefs: SharedPreferences
     private lateinit var penaltyManager: PenaltyManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,7 +20,6 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        prefs = getSharedPreferences("cbt_prefs", Context.MODE_PRIVATE)
         penaltyManager = PenaltyManager(this)
 
         buildServerList()
@@ -63,10 +59,8 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val exitPin = prefs.getString("exit_pin", "") ?: ""
         val intent = Intent(this, ExamActivity::class.java).apply {
             putExtra(ExamActivity.EXTRA_URL, server.url)
-            putExtra(ExamActivity.EXTRA_EXIT_PIN, exitPin)
         }
         startActivity(intent)
     }

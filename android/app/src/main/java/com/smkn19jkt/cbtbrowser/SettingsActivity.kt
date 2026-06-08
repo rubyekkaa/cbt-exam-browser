@@ -36,7 +36,6 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun loadSettings() {
-        binding.etExitPin.setText(prefs.getString("exit_pin", "") ?: "")
         binding.switchBlockScreenshot.isChecked = prefs.getBoolean("block_screenshot", true)
         binding.switchBlockBack.isChecked = prefs.getBoolean("block_back_button", true)
         binding.switchKioskMode.isChecked = prefs.getBoolean("enable_kiosk", true)
@@ -60,7 +59,6 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun saveSettings() {
         prefs.edit().apply {
-            putString("exit_pin", binding.etExitPin.text.toString().trim())
             putBoolean("block_screenshot", binding.switchBlockScreenshot.isChecked)
             putBoolean("block_back_button", binding.switchBlockBack.isChecked)
             putBoolean("enable_kiosk", binding.switchKioskMode.isChecked)

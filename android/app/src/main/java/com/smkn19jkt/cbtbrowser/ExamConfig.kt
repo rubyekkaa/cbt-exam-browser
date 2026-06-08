@@ -25,9 +25,27 @@ object ExamConfig {
         )
     )
 
-    // ---- Konfigurasi penalti (durasi dalam milidetik) ----
+    // ---- Deteksi ujian selesai ----
 
-    /** Penalti diberikan HANYA jika siswa sudah masuk ke halaman soal. */
+    /**
+     * Pola URL yang menandakan ujian SUDAH SELESAI (submit final).
+     * Pada Moodle, halaman review hanya muncul setelah "Submit all and finish",
+     * contoh: .../mod/quiz/review.php?attempt=127199&cmid=1665
+     *
+     * Begitu WebView memuat URL yang mengandung salah satu pola ini, kunci kiosk
+     * dilepas dan siswa boleh keluar TANPA penalti.
+     */
+    val EXAM_FINISHED_URL_PATTERNS: List<String> = listOf(
+        "/mod/quiz/review.php"
+    )
+
+    /** Cek apakah sebuah URL menandakan ujian sudah selesai. */
+    fun isExamFinishedUrl(url: String?): Boolean {
+        if (url.isNullOrEmpty()) return false
+        return EXAM_FINISHED_URL_PATTERNS.any { url.contains(it, ignoreCase = true) }
+    }
+
+    // ---- Konfigurasi penalti (durasi dalam milidetik) ----
 
     // Kartu kuning - durasi naik bertahap sesuai jumlah pelanggaran (1..3 kali).
     const val YELLOW_MIN_MS = 2 * 60 * 1000L   // 2 menit
