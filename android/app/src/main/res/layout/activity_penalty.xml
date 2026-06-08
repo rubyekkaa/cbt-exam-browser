@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/penaltyRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp"
+    android:background="@color/error">
+
+    <TextView
+        android:id="@+id/tvCardTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="KARTU KUNING"
+        android:textSize="32sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"
+        android:gravity="center" />
+
+    <TextView
+        android:id="@+id/tvViolationMsg"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Anda melakukan pelanggaran keluar paksa dari ujian."
+        android:textSize="16sp"
+        android:textColor="@android:color/white"
+        android:gravity="center" />
+
+    <TextView
+        android:id="@+id/tvCountdown"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="00:00"
+        android:textSize="64sp"
+        android:textStyle="bold"
+        android:fontFamily="monospace"
+        android:textColor="@android:color/white" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Tunggu hingga waktu penalti selesai. Anda tidak dapat memulai ujian selama masa penalti."
+        android:textSize="14sp"
+        android:textColor="@android:color/white"
+        android:gravity="center" />
+
+</LinearLayout>

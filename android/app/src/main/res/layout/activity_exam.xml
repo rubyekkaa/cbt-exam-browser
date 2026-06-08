@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <!-- Top Toolbar -->
+    <LinearLayout
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_alignParentTop="true"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="8dp"
+        android:background="@color/toolbar_bg">
+
+        <!-- Back -->
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_arrow_back"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Kembali"
+            android:padding="6dp"
+            app:tint="@color/toolbar_icon" />
+
+        <!-- Forward -->
+        <ImageButton
+            android:id="@+id/btnForward"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_arrow_forward"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Maju"
+            android:padding="6dp"
+            app:tint="@color/toolbar_icon" />
+
+        <!-- Refresh -->
+        <ImageButton
+            android:id="@+id/btnRefresh"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_refresh"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Muat ulang"
+            android:padding="6dp"
+            app:tint="@color/toolbar_icon" />
+
+        <!-- Spacer -->
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- Zoom Out -->
+        <ImageButton
+            android:id="@+id/btnZoomOut"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_zoom_out"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Perkecil"
+            android:padding="6dp"
+            app:tint="@color/toolbar_icon" />
+
+        <!-- Zoom Level -->
+        <TextView
+            android:id="@+id/tvZoomLevel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="100%"
+            android:textSize="12sp"
+            android:textColor="@color/toolbar_text"
+            android:minWidth="40dp"
+            android:gravity="center" />
+
+        <!-- Zoom In -->
+        <ImageButton
+            android:id="@+id/btnZoomIn"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_zoom_in"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Perbesar"
+            android:padding="6dp"
+            app:tint="@color/toolbar_icon" />
+
+        <!-- Separator -->
+        <View
+            android:layout_width="1dp"
+            android:layout_height="24dp"
+            android:layout_marginHorizontal="8dp"
+            android:background="@color/toolbar_divider" />
+
+        <!-- Time -->
+        <TextView
+            android:id="@+id/tvTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="00:00:00"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="@color/toolbar_time"
+            android:fontFamily="monospace" />
+
+        <!-- Separator -->
+        <View
+            android:layout_width="1dp"
+            android:layout_height="24dp"
+            android:layout_marginHorizontal="8dp"
+            android:background="@color/toolbar_divider" />
+
+        <!-- Exit -->
+        <ImageButton
+            android:id="@+id/btnExit"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_exit"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Keluar"
+            android:padding="6dp"
+            app:tint="@color/exit_icon" />
+
+    </LinearLayout>
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:layout_below="@id/toolbar"
+        android:max="100"
+        android:progressTint="@color/primary"
+        android:visibility="gone" />
+
+    <!-- WebView -->
+    <WebView
+        android:id="@+id/webView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/toolbar" />
+
+</RelativeLayout>

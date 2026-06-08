@@ -1,0 +1,76 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-disabled: true
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+        working-directory: .
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug
+        working-directory: android
+
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+        working-directory: android
+
+      - name: Build Release AAB (for Play Store)
+        run: ./gradlew bundleRelease
+        working-directory: android
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbt-exam-browser-debug
+          path: android/app/build/outputs/apk/debug/*.apk
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbt-exam-browser-release
+          path: android/app/build/outputs/apk/release/*.apk
+
+      - name: Upload Release AAB (Play Store)
+        uses: actions/upload-artifact@v4
+        with:
+          name: cbt-exam-browser-release-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            android/app/build/outputs/apk/debug/*.apk
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
