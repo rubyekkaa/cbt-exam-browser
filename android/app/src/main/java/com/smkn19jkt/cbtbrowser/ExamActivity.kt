@@ -7,7 +7,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -63,7 +62,7 @@ class ExamActivity : AppCompatActivity() {
     /** URL terakhir yang dimuat (untuk reload saat koneksi kembali). */
     private var lastExamUrl: String = ""
 
-    private var forcedExitPlayer: MediaPlayer? = null
+    private val alarmController by lazy { AlarmController(this) }
 
     private val networkRetryRunnable = object : Runnable {
         override fun run() {
@@ -485,8 +484,7 @@ class ExamActivity : AppCompatActivity() {
     }
 
     private fun playForcedExitAlarm() {
-        forcedExitPlayer?.release()
-        forcedExitPlayer = AlarmPlayer.play(this, looping = false)
+        alarmController.start(looping = false)
     }
 
     // Tombol back dinonaktifkan total selama ujian.
@@ -506,8 +504,7 @@ class ExamActivity : AppCompatActivity() {
         super.onResume()
         setupFullscreen()
         // Hentikan alarm keluar paksa begitu kembali ke ujian.
-        forcedExitPlayer?.release()
-        forcedExitPlayer = null
+        alarmController.stop()
 
         // Jika penalti menjadi aktif (akibat keluar paksa), alihkan ke layar penalti.
         if (isLocked && penaltyManager.isPenaltyActive()) {
@@ -523,10 +520,21 @@ class ExamActivity : AppCompatActivity() {
         return when (keyCode) {
             KeyEvent.KEYCODE_VOLUME_UP,
             KeyEvent.KEYCODE_VOLUME_DOWN,
+            KeyEvent.KEYCODE_VOLUME_MUTE,
             KeyEvent.KEYCODE_HOME,
             KeyEvent.KEYCODE_APP_SWITCH,
             KeyEvent.KEYCODE_MENU -> true
             else -> super.onKeyDown(keyCode, event)
+        }
+    }
+
+    // Blokir key-up volume agar slider volume sistem tidak muncul.
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        return when (keyCode) {
+            KeyEvent.KEYCODE_VOLUME_UP,
+            KeyEvent.KEYCODE_VOLUME_DOWN,
+            KeyEvent.KEYCODE_VOLUME_MUTE -> true
+            else -> super.onKeyUp(keyCode, event)
         }
     }
 
@@ -548,8 +556,7 @@ class ExamActivity : AppCompatActivity() {
     override fun onDestroy() {
         handler.removeCallbacks(timeUpdateRunnable)
         handler.removeCallbacks(networkRetryRunnable)
-        forcedExitPlayer?.release()
-        forcedExitPlayer = null
+        alarmController.stop()
         binding.webView.apply {
             stopLoading()
             destroy()

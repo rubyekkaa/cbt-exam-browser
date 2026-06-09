@@ -1,6 +1,5 @@
 package com.smkn19jkt.cbtbrowser
 
-import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.KeyEvent
@@ -21,7 +20,7 @@ class PenaltyActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPenaltyBinding
     private lateinit var penaltyManager: PenaltyManager
     private var timer: CountDownTimer? = null
-    private var alarmPlayer: MediaPlayer? = null
+    private val alarmController by lazy { AlarmController(this) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,17 +79,11 @@ class PenaltyActivity : AppCompatActivity() {
     }
 
     private fun startAlarm() {
-        alarmPlayer?.release()
-        alarmPlayer = AlarmPlayer.play(this, looping = true)
+        alarmController.start(looping = true)
     }
 
     private fun stopAlarm() {
-        try {
-            alarmPlayer?.release()
-        } catch (e: Exception) {
-            // ignore
-        }
-        alarmPlayer = null
+        alarmController.stop()
     }
 
     // Cegah tombol back keluar dari layar penalti.
@@ -98,14 +91,27 @@ class PenaltyActivity : AppCompatActivity() {
         // Tidak melakukan apa-apa: siswa harus menunggu penalti selesai.
     }
 
-    // Blokir tombol fisik (back/home/recent/volume).
+    // Blokir tombol fisik (back/home/recent/volume) agar alarm tak bisa dikecilkan.
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         return when (keyCode) {
             KeyEvent.KEYCODE_BACK,
             KeyEvent.KEYCODE_HOME,
             KeyEvent.KEYCODE_APP_SWITCH,
-            KeyEvent.KEYCODE_MENU -> true
+            KeyEvent.KEYCODE_MENU,
+            KeyEvent.KEYCODE_VOLUME_UP,
+            KeyEvent.KEYCODE_VOLUME_DOWN,
+            KeyEvent.KEYCODE_VOLUME_MUTE -> true
             else -> super.onKeyDown(keyCode, event)
+        }
+    }
+
+    // Blokir juga pada key-up agar sistem tidak menampilkan slider volume.
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        return when (keyCode) {
+            KeyEvent.KEYCODE_VOLUME_UP,
+            KeyEvent.KEYCODE_VOLUME_DOWN,
+            KeyEvent.KEYCODE_VOLUME_MUTE -> true
+            else -> super.onKeyUp(keyCode, event)
         }
     }
 
