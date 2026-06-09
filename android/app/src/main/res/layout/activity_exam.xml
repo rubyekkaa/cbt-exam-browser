@@ -144,4 +144,55 @@
         android:layout_height="match_parent"
         android:layout_below="@id/toolbar" />
 
+    <!-- Overlay koneksi terputus (tampil di atas WebView, tetap terkunci) -->
+    <LinearLayout
+        android:id="@+id/connectionOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/toolbar"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp"
+        android:background="#1A1A2E"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Koneksi Internet Terputus"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            android:gravity="center" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="JANGAN tutup aplikasi. Ujian Anda masih berlangsung.\nMenyambungkan kembali secara otomatis..."
+            android:textSize="15sp"
+            android:textColor="#E0E0E0"
+            android:gravity="center" />
+
+        <ProgressBar
+            android:id="@+id/connectionSpinner"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginTop="24dp"
+            android:indeterminateTint="@color/primary_light" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRetryConnection"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Coba Lagi Sekarang"
+            android:textColor="@android:color/white"
+            app:strokeColor="@color/primary_light"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+    </LinearLayout>
+
 </RelativeLayout>

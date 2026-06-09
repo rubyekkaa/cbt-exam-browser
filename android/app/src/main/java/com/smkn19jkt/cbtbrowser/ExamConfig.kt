@@ -45,6 +45,23 @@ object ExamConfig {
         return EXAM_FINISHED_URL_PATTERNS.any { url.contains(it, ignoreCase = true) }
     }
 
+    // ---- Pintu darurat pengawas ----
+
+    /**
+     * Kode darurat pengawas. Dipicu dengan menahan jam/timer di toolbar selama 5 detik,
+     * lalu memasukkan kode ini. Keluar lewat cara ini = BERSIH, tanpa penalti.
+     * Hanya pengawas yang boleh tahu. Ganti angka di sini lalu build ulang untuk mengubah.
+     */
+    const val EMERGENCY_EXIT_CODE = "191919"
+
+    /** Lama tahan (ms) pada jam untuk memunculkan input kode darurat. */
+    const val EMERGENCY_HOLD_MS = 5000L
+
+    // ---- Penanganan koneksi terputus ----
+
+    /** Interval auto-retry (ms) saat koneksi internet terputus. */
+    const val NETWORK_RETRY_INTERVAL_MS = 5000L
+
     // ---- Konfigurasi penalti (durasi dalam milidetik) ----
 
     // Kartu kuning - durasi naik bertahap sesuai jumlah pelanggaran (1..3 kali).

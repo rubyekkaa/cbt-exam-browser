@@ -7,12 +7,12 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.media.Ringtone
-import android.media.RingtoneManager
+import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.text.InputType
 import android.view.KeyEvent
 import android.view.View
 import android.view.WindowManager
@@ -22,6 +22,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -56,7 +57,22 @@ class ExamActivity : AppCompatActivity() {
     /** True jika ujian sudah selesai (mencapai halaman review/submit final). */
     private var examFinished = false
 
-    private var forcedExitRingtone: Ringtone? = null
+    /** True jika sedang menampilkan overlay koneksi terputus. */
+    private var isConnectionLost = false
+
+    /** URL terakhir yang dimuat (untuk reload saat koneksi kembali). */
+    private var lastExamUrl: String = ""
+
+    private var forcedExitPlayer: MediaPlayer? = null
+
+    private val networkRetryRunnable = object : Runnable {
+        override fun run() {
+            if (isConnectionLost) {
+                binding.webView.reload()
+                handler.postDelayed(this, ExamConfig.NETWORK_RETRY_INTERVAL_MS)
+            }
+        }
+    }
 
     private val timeUpdateRunnable = object : Runnable {
         override fun run() {
@@ -187,6 +203,9 @@ class ExamActivity : AppCompatActivity() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                     super.onPageStarted(view, url, favicon)
                     binding.progressBar.visibility = View.VISIBLE
+                    if (!url.isNullOrEmpty() && !ExamConfig.isExamFinishedUrl(url)) {
+                        lastExamUrl = url
+                    }
                     // Deteksi sedini mungkin: jika sudah masuk halaman review = ujian selesai.
                     if (ExamConfig.isExamFinishedUrl(url)) {
                         onExamFinished()
@@ -196,6 +215,10 @@ class ExamActivity : AppCompatActivity() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
                     binding.progressBar.visibility = View.GONE
+                    // Halaman berhasil dimuat -> koneksi pulih, sembunyikan overlay.
+                    if (isConnectionLost) {
+                        hideConnectionLost()
+                    }
                     // Siswa sudah masuk ke halaman soal -> mulai berlaku penalti.
                     if (!enteredExam) {
                         enteredExam = true
@@ -220,16 +243,14 @@ class ExamActivity : AppCompatActivity() {
 
                 override fun onReceivedError(
                     view: WebView?,
-                    errorCode: Int,
-                    description: String?,
-                    failingUrl: String?
+                    request: WebResourceRequest?,
+                    error: android.webkit.WebResourceError?
                 ) {
-                    super.onReceivedError(view, errorCode, description, failingUrl)
-                    Toast.makeText(
-                        this@ExamActivity,
-                        "Error: $description",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    super.onReceivedError(view, request, error)
+                    // Hanya tangani error pada main frame (halaman utama), bukan resource kecil.
+                    if (request?.isForMainFrame == true) {
+                        showConnectionLost()
+                    }
                 }
             }
 
@@ -279,6 +300,61 @@ class ExamActivity : AppCompatActivity() {
         }
         binding.btnExit.setOnClickListener { showExitDialog() }
         binding.tvZoomLevel.text = "$currentZoom%"
+
+        // Pintu darurat pengawas: tahan jam selama 5 detik -> input kode rahasia.
+        setupEmergencyExit()
+
+        // Tombol coba lagi pada overlay koneksi terputus.
+        binding.btnRetryConnection.setOnClickListener {
+            binding.webView.reload()
+        }
+    }
+
+    /**
+     * Pintu darurat pengawas. Tahan (long press) pada jam/timer selama [EMERGENCY_HOLD_MS],
+     * lalu muncul input kode. Kode benar = keluar bersih tanpa penalti.
+     */
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupEmergencyExit() {
+        var pending: Runnable? = null
+        binding.tvTime.setOnTouchListener { v, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    pending = Runnable { showEmergencyExitDialog() }
+                    handler.postDelayed(pending!!, ExamConfig.EMERGENCY_HOLD_MS)
+                    true
+                }
+                android.view.MotionEvent.ACTION_UP,
+                android.view.MotionEvent.ACTION_CANCEL -> {
+                    pending?.let { handler.removeCallbacks(it) }
+                    pending = null
+                    v.performClick()
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun showEmergencyExitDialog() {
+        val editText = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
+            hint = "Kode pengawas"
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Keluar Darurat (Pengawas)")
+            .setMessage("Masukkan kode pengawas untuk keluar tanpa penalti:")
+            .setView(editText)
+            .setPositiveButton("Keluar") { _, _ ->
+                if (editText.text.toString() == ExamConfig.EMERGENCY_EXIT_CODE) {
+                    exitLegitimately()
+                } else {
+                    Toast.makeText(this, "Kode salah.", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Batal", null)
+            .setCancelable(false)
+            .show()
     }
 
     private fun applyZoom() {
@@ -351,16 +427,21 @@ class ExamActivity : AppCompatActivity() {
 
     /**
      * Dipanggil saat WebView mencapai halaman review (ujian selesai/submit final).
-     * Lepas kunci kiosk: siswa boleh keluar tanpa penalti. Bersihkan sesi agar
-     * keluar paksa setelah ini tidak lagi dihitung pelanggaran.
+     *
+     * PENTING: sematan kiosk TIDAK langsung dilepas di sini (mencegah celah anak
+     * kabur di jeda setelah submit). Kita hanya menandai "selesai" dan membersihkan
+     * sesi penalti. Kunci baru dilepas saat siswa menekan tombol Keluar.
      */
     private fun onExamFinished() {
         if (examFinished) return
         examFinished = true
-        legitimateExit = true
+        // Bersihkan sesi agar keluar setelah ini tidak dihitung pelanggaran.
         penaltyManager.clearExamSession()
-        stopLockTaskSafely()
-        Toast.makeText(this, "Ujian selesai. Anda boleh keluar lewat tombol keluar.", Toast.LENGTH_LONG).show()
+        Toast.makeText(
+            this,
+            "Ujian selesai. Tekan tombol Keluar (X) di pojok kanan untuk mengakhiri.",
+            Toast.LENGTH_LONG
+        ).show()
     }
 
     private fun stopLockTaskSafely() {
@@ -369,6 +450,21 @@ class ExamActivity : AppCompatActivity() {
         } catch (e: Exception) {
             // Mungkin tidak dalam mode lock task.
         }
+    }
+
+    /** Tampilkan overlay koneksi terputus + mulai auto-retry. Tetap terkunci. */
+    private fun showConnectionLost() {
+        if (isConnectionLost) return
+        isConnectionLost = true
+        binding.connectionOverlay.visibility = View.VISIBLE
+        handler.postDelayed(networkRetryRunnable, ExamConfig.NETWORK_RETRY_INTERVAL_MS)
+    }
+
+    /** Sembunyikan overlay koneksi terputus (koneksi pulih). */
+    private fun hideConnectionLost() {
+        isConnectionLost = false
+        handler.removeCallbacks(networkRetryRunnable)
+        binding.connectionOverlay.visibility = View.GONE
     }
 
     /**
@@ -389,20 +485,8 @@ class ExamActivity : AppCompatActivity() {
     }
 
     private fun playForcedExitAlarm() {
-        try {
-            val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            forcedExitRingtone = RingtoneManager.getRingtone(applicationContext, uri)?.apply {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    audioAttributes = android.media.AudioAttributes.Builder()
-                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
-                        .build()
-                }
-                play()
-            }
-        } catch (e: Exception) {
-            // ignore
-        }
+        forcedExitPlayer?.release()
+        forcedExitPlayer = AlarmPlayer.play(this, looping = false)
     }
 
     // Tombol back dinonaktifkan total selama ujian.
@@ -422,8 +506,8 @@ class ExamActivity : AppCompatActivity() {
         super.onResume()
         setupFullscreen()
         // Hentikan alarm keluar paksa begitu kembali ke ujian.
-        forcedExitRingtone?.stop()
-        forcedExitRingtone = null
+        forcedExitPlayer?.release()
+        forcedExitPlayer = null
 
         // Jika penalti menjadi aktif (akibat keluar paksa), alihkan ke layar penalti.
         if (isLocked && penaltyManager.isPenaltyActive()) {
@@ -463,8 +547,9 @@ class ExamActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         handler.removeCallbacks(timeUpdateRunnable)
-        forcedExitRingtone?.stop()
-        forcedExitRingtone = null
+        handler.removeCallbacks(networkRetryRunnable)
+        forcedExitPlayer?.release()
+        forcedExitPlayer = null
         binding.webView.apply {
             stopLoading()
             destroy()

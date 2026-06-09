@@ -1,8 +1,6 @@
 package com.smkn19jkt.cbtbrowser
 
-import android.media.RingtoneManager
-import android.media.Ringtone
-import android.os.Build
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.view.KeyEvent
@@ -23,7 +21,7 @@ class PenaltyActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPenaltyBinding
     private lateinit var penaltyManager: PenaltyManager
     private var timer: CountDownTimer? = null
-    private var ringtone: Ringtone? = null
+    private var alarmPlayer: MediaPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,32 +80,17 @@ class PenaltyActivity : AppCompatActivity() {
     }
 
     private fun startAlarm() {
-        try {
-            var alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            ringtone = RingtoneManager.getRingtone(applicationContext, alarmUri)?.apply {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    audioAttributes = android.media.AudioAttributes.Builder()
-                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
-                        .build()
-                }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    isLooping = true
-                }
-                play()
-            }
-        } catch (e: Exception) {
-            // Abaikan jika alarm tidak bisa diputar.
-        }
+        alarmPlayer?.release()
+        alarmPlayer = AlarmPlayer.play(this, looping = true)
     }
 
     private fun stopAlarm() {
         try {
-            ringtone?.stop()
+            alarmPlayer?.release()
         } catch (e: Exception) {
             // ignore
         }
-        ringtone = null
+        alarmPlayer = null
     }
 
     // Cegah tombol back keluar dari layar penalti.
